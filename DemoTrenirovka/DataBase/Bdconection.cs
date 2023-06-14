@@ -8,6 +8,6 @@ namespace DemoTrenirovka.DataBase
 {
     public class Bdconection
     {
-        public static ToysEntities connection = new ToysEntities();
+        public static ToysEntities2 connection = new ToysEntities2();
     }
 }

@@ -1,0 +1,639 @@
+Для навигаци с главного окна по страницам нужно создать frame в xaml
+<Frame x:Name="auto_reg" NavigationUIVisibility="Hidden"/>
+
+Установить минимальный размер окна для того, что бы приложение не кукожилось до точки и задать название окна, которое будет показано при запуске
+MinHeight="600" MinWidth="800"
+Title="ЭкоЦивилизация"
+
+Для того что бы окно навигировалось надо прописать на что будет навигироваться frame в cs файле окна, если страницы лежат в отдельной папке,  то прописать using до них
+using MyProg.Pages;
+frameNavigate.NavigationService.Navigate(new AuthorizationPage());
+
+
+Для того, что бы установить иконку приложения необходимо открыть Properties наверху проекта из него перейти в Resources.resx в верхнем левом углу выбрать "Значки" из выпадающего списка и перетянуть туда файл икноки в формате ico. Сохранить и закрыть. После чего открыть сам Properties и на вкладке приложение указать значок выбрав ваше изображение из выпадающего списка.
+
+Для подключения базы данных необходимо создать новую папку "DataBase" и добавить в нее модель ADO. После чего в этой же папке создать новый новый класс подключения "BDConnection", сделать его публичным и прописать строку подключения.
+public static MyDataBaseEntities connection = new MyDataBaseEntities();
+
+Для обращения к папке с базой данных из другого расположения необходимо не забывать прописывать
+using MyProg.DataBase;
+
+АВТОРИЗАЦИЯ 
+Для проверки авторизации пользователя необходимо написать код ниже. Если users пустой, то логин и пароль не совпадают, пользователь не авторизован. Данная проверка будет работать только при уникальном сочетании логина и пароля у пользователей. Поэтому при регистрации необходимо проверять новый логин пользователя с уже имеющимися в бд и в случае повтора, просить придумать другой логин.
+users = new List<User>(bd_connection.connection.User.ToList());
+var userExsist = users.Where(user => user.Login == login && user.Password == password).FirstOrDefault();
+
+
+БЛОКИРОВКА ВХОДА, ЕСЛИ ПОЛЬЗОВАТЕЛЬ ВВЕЛ НЕВЕРНЫЙ ПАРОЛЬ БОЛЕЕ ТРЕХ РАЗ.
+Для этого необходимо создать глобальную переменную. Раскрываем стрелкой вниз Properties и выбираем Settings.settings
+Создаем переменную LockAutharization типа DateTime с изначальным значением null
+Затем на странице авторизации создаем публичную переменyую 
+public static int entryPassСount = 0;
+
+Если при авторизации логин и пароль не  совпадают, то к текущему значению 
+entryPassСount =+ entryPassСount;
+Если же при проверке значения данной переменной она ==3, то
+if (pass_count == 3)
+{
+    pass_count = 0;
+    Properties.Settings.Default.LockAutharization = DateTime.Now.AddMinutes(1); // Можно добавить столько минут, на сколько необходимо заблокировать. 
+    Properties.Settings.Default.Save();
+}
+
+
+Перед каждой попыткой пользователя авторизоваться проверяем значение переменной Properties.Settings.Default.LockAutharization. Если оно меньше текущего времени, то все хорошо, пользователь авторизован. Если же нет, то значит время с начала прошлой блокировки еще не прошло и мы выводим следующее сообщение
+MessageBox.Show("Вы ввели неверный пароль 3 раза, возможность входа заблокирована на: \n" + (Properties.Settings.Default.Password - DateTime.Now).Seconds + " сек.");
+Оно будет выводиться, даже если перезапустить приложение.
+
+
+СОХРАНЕНИЕ ЛОГИНА ПОЛЬЗОВАТЕЛЯ (ЗАПОМНИТЬ МЕНЯ)
+Для этого необходимо создать глобальную переменную. Раскрываем стрелкой вниз Properties и выбираем Settings.settings
+Создаем переменную Login типа string с изначальным значением null
+И в файле xaml создать CheckBox "cbSaveLogin" с вопросом "Запомнить логин?", которой можно установить изначальное состояние true
+<CheckBox x:Name="cbSaveLogin" Content="Запомнить логин?" IsChecked="True"/>
+
+При каждой успешной авторизации проверяем чему равно значение CheckBox "cbSaveLogin" и от этого либо сохраняем логин, либо наоборот его стираем.
+if (cb_saveLogin.IsChecked.GetValueOrDefault())
+{
+    Properties.Settings.Default.Login = tb_login.Text.Trim();
+    Properties.Settings.Default.Save();
+}
+else
+{
+    Properties.Settings.Default.Login = null;
+    Properties.Settings.Default.Save();
+}
+
+Для того, что бы текстовое поле с логином было заполнено при запуске страницы необходимо
+tbLogin.Text = Properties.Settings.Default.Login;
+Если значение Properties.Settings.Default.Login null, то поле останется пустым, если же там сохранен логин, то будет подставлен он. Даже после завершения работы приложения.
+
+РЕГИСТРАЦИЯ
+Для регистрации мы должны создать новую копию объекта User и заполнить его данные. Но так же не следует забывать и о проверке уникальности логина. Для этого необходима следующая функция.
+public static bool UniqueLogin(string login)
+{
+    users = new ObservableCollection<User>(bd_connection.connection.User.ToList());
+    bool login_unic = true;
+    foreach (var i in users)
+    {
+        if (i.Login == login)
+        {
+            login_unic = false;
+        }
+    }
+    return login_unic;
+}
+
+Если она возвращает истину, то это уникальный логин, если ложь, то просим пользователя изменить логин.
+Перед каждым сохраненеием пользователя не забываем делать эту проверку.
+
+public static void RegistrationUser(string nick, string login, string password)
+{
+    if(UniqueLogin(login))
+    {
+        User newUser = new User();
+        newUser.Nickname = nick;
+        newUser.Login = login;
+        newUser.Password = password;
+        bd_connection.connection.User.Add(newUser);
+        bd_connection.connection.SaveChanges();
+    }
+    else
+    { 
+        MessageBox.Show("Придумайте другой логин");
+    }
+}
+
+Так же не забывайте о проверке номера телефона, почты и тд.
+
+ВЫВОД СПИСКА ИНФОРМАЦИИ
+Получаем информацию из БД.
+Для этого объявляем публичную переменную в которой мы ее будем хранить.
+public static List<Application> applicationList {get; set;}
+И заполняем ее
+applicationList = bd_connection.connection.Application.ToList();
+После чего создаем ListView в xaml
+
+<ListView x:Name="lv_applications" ItemsSource="{Binding applicationList}" HorizontalContentAlignment="Stretch" SelectionChanged="lv_applications_SelectionChanged">
+
+<ListView.ItemsPanel>
+    <ItemsPanelTemplate>
+        <UniformGrid Columns="1"/> //для создания колонок
+    </ItemsPanelTemplate>
+</ListView.ItemsPanel> 
+                                        //Если нужно выводить не плитками, а просто в строку, то можно убрать этот код
+
+<DataTemplate>
+    <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+        <Image Source="{Binding Photo}"/>
+        <TextBlock Text="{Binding Name}" 
+           HorizontalAlignment="Center"
+           VerticalAlignment="Center"
+           FontSize="30"
+           FontWeight="Bold"
+           Margin="0, 20, 0, 0"
+           Foreground="#FF215273"
+           TextWrapping="Wrap"
+           TextAlignment="Center"/>
+       <TextBlock Text="{Binding Description}"
+           HorizontalAlignment="Center"
+           VerticalAlignment="Center"
+           FontSize="20" 
+           Foreground="#FF345E7A"
+           TextWrapping="Wrap"            // перенос текста по строкам
+           TextAlignment="Center"
+           Margin="0, 10, 0, 20"/>
+    </StackPanel>
+</DataTemplate>
+</ListView>
+
+
+ФИЛЬТРЫ И ПАГИНАЦИЯ
+
+
+public partial class GlavnayaPage : Page
+{
+    public static List<Client> clients { get; set; }
+    public static List<Gender> genders { get; set; }
+    private int page = 0;
+
+    public GlavnayaPage()
+    {
+        InitializeComponent();
+        clients = bd_connection.connection.Client.ToList();
+        genders = bd_connection.connection.Gender.ToList();
+
+        cbFilter.ItemsSource = genders;
+        cbFilter.DisplayMemberPath = "Name";
+
+        DataContext = this;
+    }
+
+    private void Next_Click(object sender, RoutedEventArgs e)
+    {
+        if (page < (int)Math.Round((double)Context.Suppliers.Count() / 20) - 1)
+        page++;
+
+        Filter();
+    }
+
+    private void Back_Click(object sender, RoutedEventArgs e)
+    {
+       if (page > 0)
+       page--;
+
+        Filter();
+     }
+
+ private void OnButtonClick(object sender, RoutedEventArgs e)
+        {
+            page = Convert.ToInt32((sender as Button).Content) - 1;
+            
+            Filter();
+        }
+
+    private void tbSearch_SelectionChanged(object sender, RoutedEventArgs e)
+    {
+        Filter();
+    }
+
+    private void cbFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        Filter();
+    }
+
+    public void Filter()
+    {
+        List<Client> filterClients = bd_connection.connection.Client.ToList();
+        
+        // Сперва все фильтруем по каждому объекту-фильтру/ сортировки
+        if(cbFilter.SelectedItem != null)
+        {
+            var gender = cbFilter.SelectedItem as Gender;
+            filterClients = filterClients.Where(x => x.Gender == gender).ToList();
+        }
+
+        if(tbSearch.Text.Trim().Length != 0)
+        {
+            filterClients = filterClients.Where(x => x.Name.Contains(tbSearch.Text.Trim()) || x.Surname.Contains(tbSearch.Text.Trim()) || x.Lastname.Contains(tbSearch.Text.Trim())).ToList();
+        }
+
+
+        CreatePagingList();
+            
+        // Потом мы делаем пагинацию
+        filterClients = filterClients.Skip(20 * page).Take(20).ToList();
+
+        // После этого сортируем 
+        filterClients = filterClients.SelectedIndex == 0 
+                ? filterClients.OrderBy(x => x.StartDate).ToList() 
+                : filterClients.OrderByDescending(x => x.StartDate).ToList();
+
+        // Обновляем источник для элемента компоновки и обновляем лэйбл
+        lvClients.ItemsSource = filterClients;
+        CountOfClient.Content = $"{(20 * page) + filterClients.Count}/{Context.Client.Count()}";
+    }
+}
+
+private void CreatePagingList()
+        {
+        // Очищаем весь список
+        PagingPanel.Children.RemoveRange(0, PagingPanel.Children.Count);
+            
+        // Задаем все кнопки пагинации 
+        for (var i = 1; i <= (int)Math.Round((double)DataSuppliers.Count / 20); i++)
+        {
+        var button = new Button
+        {
+            Width = 30,
+            Height = 30,
+            Content = i.ToString()
+        };
+        button.Click += OnButtonClick;
+                
+        // Добавляем в панель
+        PagingPanel.Children.Add(button);
+    }
+}
+
+
+В xaml для пагинации надо добавить 
+
+<StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+            
+            <StackPanel Orientation="Horizontal"
+                        Margin="50, 0, 50, 0"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                <Button x:Name="Back"
+                        Click="Back_Click"
+                        Style="{DynamicResource ButtonStyle1}" 
+                        Width="100"
+                        Margin="10"
+                        Content="Назад"
+                        Height="40"/>
+                <Label  Content="10/200"
+                        Margin="10"
+                        x:Name="CountOfSupplier"
+                        VerticalContentAlignment="Center"/>
+                <Button Style="{DynamicResource ButtonStyle1}" 
+                        x:Name="Next"
+                        Margin="10"
+                        Click="Next_Click"
+                        Width="100"
+                        Content="Вперед"
+                        Height="40"/>
+</StackPanel>
+
+Оно выводит список сколько из скольки показано.
+
+
+
+Еще один пример, с номерами страниц (1   2   3   4 ...)
+xaml
+
+<StackPanel Orientation="Horizontal" Grid.Column="2" VerticalAlignment="Center">
+                <TextBlock Text="&lt;" Style="{DynamicResource Pagination}" PreviewMouseDown="Paginator"/>
+                <StackPanel x:Name="spPages" Orientation="Horizontal">
+                    
+                </StackPanel>
+                <TextBlock Text="&gt;" Style="{DynamicResource Pagination}" PreviewMouseDown="Paginator"/>
+</StackPanel>
+
+
+cs
+        private void Paginator(object sender, MouseButtonEventArgs e)
+        {
+            var content = (sender as TextBlock).Text.ToString();
+
+            var pagesCount = Products.Count / ITEMONPAGE + (Products.Count % ITEMONPAGE != 0 ? 1 : 0);
+
+            if (content.Contains("<") && page > 0)
+                page--;
+            else if (content.Contains(">") && page < pagesCount - 1)
+                page++;
+            else if (int.TryParse(content, out int pageNumber))
+                page = pageNumber - 1;
+        }
+
+
+private void GeneratePages()
+        {
+            spPages.Children.Clear();
+
+            var pagesCount = Products.Count / ITEMONPAGE + (Products.Count % ITEMONPAGE != 0 ? 1 : 0);
+
+            for (int i = 0; i < pagesCount; i++)
+            {
+                spPages.Children.Add(new TextBlock
+                {
+                    Text = (i + 1).ToString(),
+                    Style = Application.Current.FindResource("Pagination") as Style
+                });
+
+                spPages.Children[i].PreviewMouseDown += Paginator;
+            }
+            if (spPages.Children.Count != 0)
+                (spPages.Children[page] as TextBlock).TextDecorations = TextDecorations.Underline;
+        }
+
+
+КАПЧА
+XAML
+
+<Grid>
+    <Grid Width="500" Height="300">
+        <StackPanel x:Name="SPanelSymbols" 
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+            <Canvas x:Name="CanvasNoise"></Canvas>
+        </StackPanel>
+    </Grid>
+    <Grid VerticalAlignment="Bottom">
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <TextBox x:Name="tbKaptcha"
+             FontSize="20"
+             Width="auto"
+             Grid.Row="0"/>
+        <Button x:Name="btnChek"
+                Content="Check"
+                Click="btnChek_Click"
+                Grid.Row="1"/>
+        <Button x:Name="btnUpdate" 
+            Content="Update"
+            Click="btnUpdate_Click"
+            Grid.Row="2"/>
+    </Grid>
+    
+</Grid>
+
+CS
+
+public partial class MainWindow : Window
+{
+    public Random rnd = new Random();
+    public string KaptchaText = "";
+    public MainWindow()
+    {
+        InitializeComponent();
+        UpdateCaptcha();
+    }
+
+    private void btnUpdate_Click(object sender, RoutedEventArgs e)
+    {
+        UpdateCaptcha();
+    }
+
+    private void GenerateSymbols(int count)
+    {
+        string alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghilklomnpqrstuwxyz0123456789";
+        KaptchaText = "";
+
+        for (int i = 0; i < count; i++)
+        {
+            string symbol = alphabet.ElementAt(rnd.Next(0, alphabet.Length)).ToString();
+            TextBlock lbl = new TextBlock();
+            lbl.Text = symbol;
+            lbl.FontSize = rnd.Next(35, 85);
+            lbl.RenderTransform = new RotateTransform(rnd.Next(-45, 45));
+            lbl.Margin = new Thickness(10, 10, 10, 10);
+            //lbl.Foreground = new SolidColorBrush(Color.FromArgb((byte)rnd.Next(256), (byte)rnd.Next(256), (byte)rnd.Next(256), (byte)rnd.Next(256)));
+            KaptchaText += symbol;
+            SPanelSymbols.Children.Add(lbl);
+        }
+    }
+
+    private void GenerateNoise(int volumeNoise)
+    {
+        CanvasNoise.Children.Clear();
+        for (int i = 0; i < volumeNoise; i++)
+        {
+            Rectangle rectangle = new Rectangle();
+            rectangle.Fill = new SolidColorBrush(Color.FromArgb((byte)rnd.Next(100, 256), (byte)rnd.Next(256), (byte)rnd.Next(256), (byte)rnd.Next(256)));
+            rectangle.Width = rnd.Next(5, 50);
+            rectangle.Height = rnd.Next(5, 50);
+            CanvasNoise.Children.Add(rectangle);
+            Canvas.SetLeft(rectangle, rnd.Next(0, 350));
+            Canvas.SetTop(rectangle, rnd.Next(0, 250));
+        }
+    }
+
+    private void UpdateCaptcha()
+    {
+        GenerateSymbols(rnd.Next(4, 8));
+        GenerateNoise(rnd.Next(10, 15));
+    }
+
+    private void btnChek_Click(object sender, RoutedEventArgs e)
+    {
+        string kaptch = tbKaptcha.Text.Trim();
+        if (KaptchaText.Length != 0)
+        {
+            if (kaptch == KaptchaText)
+            {
+                MessageBox.Show("Ok");
+            }
+            else
+            {
+                MessageBox.Show("Error");
+            }
+        }
+        else
+        {
+            MessageBox.Show("Error");
+        }
+    }
+
+
+
+PARTIAL КЛАССЫ
+
+
+namespace ChatRoom.DataBase
+{
+
+    public partial class Chatroom
+    {
+        public string LastChatMessage
+        {
+            get
+            {
+                try
+                {
+                    return this.ChatMessage.Max(x => (DateTime)x.Date).ToString();  //Создаем у класса из бд Chatroom новую переменную (колонку) LastChatMessage, которая возвращает либо последнее сообщение, либо пусто
+                }
+                catch (Exception)
+                {
+                    return "Пусто";
+                }
+            }
+        }
+
+    }
+
+    public partial class Departament
+    {
+        public bool IsChecked { get; set; } = false;  //Показывает выбран эта запись или нет
+    }
+}
+
+
+
+
+//другой пример, от количества фотографий меняется их размер
+
+public partial class Application
+{
+
+    public int PhotoWidth => 1200 / PhotoApplication.Count();
+    public int PhotoHeight => 900 / PhotoApplication.Count();
+
+    public int PhotoWidthAddPage => (int)(400 / Math.Sqrt(PhotoApplication.Count()));
+    public int PhotoHeihtAddPage => (int)(300 / Math.Sqrt(PhotoApplication.Count()));
+
+}
+
+
+// Вот так вызывается из xaml
+<Image Source="{Binding Photo}"
+       Width="{Binding Application.PhotoWidth}"
+       Height="{Binding Application.PhotoHeight}"/>
+
+
+
+МНОЖЕСТВЕННЫЙ ВЫБОР ЭЛЕМЕНТОВ ИЗ LISTVIEW
+У ListView прописываем SelectionMode="Extended" (там же где имя листа и тд)
+
+теперь, создаем кнопку (у меня это изменение проритета), которая будет изменять что-то у всех выделенных записей. И при нажатии на нее срабатывает функция
+
+private void btnEditPriority_Click(object sender, RoutedEventArgs e)
+{
+    if(lvProd.SelectedItems.Count != 0) //Проверяем выбран ли хоть один продукт
+    {
+        var editAgentPriority = lvProd.SelectedItems.Cast<Agent>().ToList();       //записываем все выбранные продукты в новую переменную
+        if ((new EditPriorityWindow(editAgentPriority).ShowDialog()).Value == true)    //передаем этот лист на изменение
+        {
+            lvProd.ItemsSource = BDConnection.connection.Agent.ToList();      //обновляем листвью что бы отобразилась новая информация
+            lvProd.Items.Refresh();
+            cbFiltr.SelectedIndex = 0;
+            cbSort.SelectedIndex = 0;
+            tbSearch.Text = "";                                      //сбрасываем все фильтры что бы ничего не сломалось
+        }
+}
+
+
+ОТКРЫТИЕ НА ДВОЙНОЙ КЛИК
+
+ У ListView прописываем MouseDoubleClick="lvProd_MouseDoubleClick" (там же где имя листа и тд). Это такая же функция как и обычный клик. Нужна что бы при множественном выборе на одиночный клик выбирался элемент, а не открывалось новое окно с информацией о продукте. Это окно теперь открываем на двойной клик.
+
+
+СТИЛИ
+Глобальные стили для всего приложения мы прописываем в файле App.xaml
+
+
+<Application.Resources>
+    <Style TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="Comic Sans MS"/>
+        <Setter Property="Margin" Value="5"/>
+        <Setter Property="FontSize" Value="30"/>
+    </Style>
+    <Style TargetType="ListView">
+        <Setter Property="FontFamily" Value="Comic Sans MS"/>
+    </Style>
+    <Style TargetType="TextBox">
+        <Setter Property="FontFamily" Value="Comic Sans MS"/>
+        <Setter Property="FontSize" Value="30"/>
+    </Style>
+    <Style TargetType="Button">
+        <Setter Property="FontFamily" Value="Comic Sans MS"/>
+        <Setter Property="Background" Value="#43DCFE"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="FontSize" Value="20"/>
+    </Style>
+</Application.Resources>
+
+
+ПРОВЕРКА НА ТО ПУСТОЕ ТЕКСТОВОЕ ПОЛЕ ИЛИ НЕТ ПРИ ПОМОЩИ StringBuilder()
+
+private void btnSave_Click(object sender, RoutedEventArgs e)
+{
+    var stringBuilder = new StringBuilder();
+    if (Agent.Title == null)
+        stringBuilder.AppendLine("Не заполнено наименование");
+    if (Agent.AgentType == null)
+        stringBuilder.AppendLine("Не выбран тип");
+    if (Agent.Address == null)
+        stringBuilder.AppendLine("Не заполнен адрес");
+    if (Agent.INN == null)
+        stringBuilder.AppendLine("Не заполнено ИНН");
+    if (Agent.KPP == null)
+        stringBuilder.AppendLine("Не заполнено КПП");
+    if (Agent.DirectorName == null)
+        stringBuilder.AppendLine("Не заполнено имя директора");
+    if (Agent.Phone == null)
+        stringBuilder.AppendLine("Не заполнен телефон");
+    if (Agent.Email == null)
+        stringBuilder.AppendLine("Не заполнена почта");
+    if (Agent.Priority == 0)
+        stringBuilder.AppendLine("Не заполнен приоритет");
+
+    if(stringBuilder.Length > 0)
+    {
+        MessageBox.Show(stringBuilder.ToString());
+    }
+    else
+    {
+        if(Agent.ID == 0)
+        {
+            BDConnection.connection.Agent.Add(Agent);
+        }
+        BDConnection.connection.SaveChanges();
+    }
+}
+
+УДОБНОЕ УДАЛЕНИЕ БЕЗ СОЗДАНИЯ ПОСТОЯННОГО ОКНА С ВОЗВРАТОМ РЕЗУЛЬТАТА
+if(MessageBox.Show("Вы действительно хотите удалить агента?", "Внимание!", MessageBoxButton.YesNo, MessageBoxImage.Error) == MessageBoxResult.Yes)
+{
+    if(Agent.ProductSale.Count != 0)
+    {
+        BDConnection.connection.Agent.Remove(Agent);
+        BDConnection.connection.SaveChanges();
+        NavigationService.Navigate(new AgentsListPage());
+    }
+    else
+        MessageBox.Show("Нельзя удалить агента с записями о продажах!", "Внимание!", MessageBoxButton.OK, MessageBoxImage.Error);
+}
+
+
+
+КОД ДЛЯ ТОГО ЧТОБЫ КОНВЕРТНУТЬ КАРТИНКИ ИЗ БД ДАННЫЕ ПУТЕМ В МАССИВ БАЙТОВ
+Его надо прогнать один раз и потом можно либо удалить либо закоментарить
+foreach(var ag in Agents)
+{
+    if (ag.Logo != null)                   //ag.Logo Это новый столбец в таблице под фотки формата варбинари, тут мы проверяем пустое ли это поле
+    {
+        ag.LogoPhoto = File.ReadAllBytes(@"C:\Users\201922\Source\Repos\Zilya23\Poprygunok\Poprygunok" + ag.Logo);    //Если пустое, то записываем туда нашу картинку (путь у вас будет свой)
+        BDConnection.connection.SaveChanges();
+    }
+}
+
+ИЗМЕНЕНИЕ КАРТИНКИ, КОГДА ЭТО МАССИВ БАЙТОВ
+
+private void btnAddLogo_Click(object sender, RoutedEventArgs e)
+{
+    OpenFileDialog openFileDialog = new OpenFileDialog();
+    if(openFileDialog.ShowDialog() == true)
+    {
+        Agent.LogoPhoto = File.ReadAllBytes(openFileDialog.FileName);
+        imgLogo.Source = new BitmapImage(new Uri(openFileDialog.FileName));
+    }
+}
+
