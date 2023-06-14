@@ -23,6 +23,7 @@ namespace DemoTrenirovka.Pages
     {
         Random rnd = new Random();
         public string capcha = "";
+        public List<User> users { get; set; }
         public AutgorisPage()
         {
             InitializeComponent();
@@ -43,7 +44,7 @@ namespace DemoTrenirovka.Pages
                 string symbol = alph.ElementAt(rnd.Next(0, alph.Length)).ToString();
                 TextBlock lbl = new TextBlock();
                 lbl.Text = symbol;
-                lbl.FontSize = rnd.Next(5, 70);
+                lbl.FontSize = rnd.Next(10, 70);
                 lbl.RenderTransform = new RotateTransform(rnd.Next(-45, 90));
                 lbl.Margin = new Thickness(10, 10, 10, 10);
                 CaptchPanel.Children.Add(lbl);
@@ -61,15 +62,36 @@ namespace DemoTrenirovka.Pages
                 CanvasNoise.Children.Add(rectangle);
                 Canvas.SetLeft(rectangle, rnd.Next(0, 350));
 
-                Canvas.SetBottom(rectangle, rnd.Next(0, 220));
+                Canvas.SetBottom(rectangle, rnd.Next(0, 180));
             }
         }
 
         private void btnEnter_Click(object sender, RoutedEventArgs e)
         {
-            if (capcha == tbCapth.Text.Trim())
+            if (capcha.ToLower() == tbCapth.Text.Trim().ToLower())
             {
-                MessageBox.Show("Вход выполнен");
+                users = new List<User>(Bdconection.connection.User.ToList());
+                var userExsist = users.Where(user => user.Login == tbLog.Text.Trim() && user.Password == tbPass.Password.Trim()).FirstOrDefault();
+                if(userExsist != null)
+                {
+                    if(userExsist.IdRole == 1)
+                    {
+                        NavigationService.Navigate(new RoleOnePage());
+                    }
+                    else if (userExsist.IdRole == 2)
+                    {
+                        NavigationService.Navigate(new RoleTwoPage());
+                    }
+                    else
+                    {
+                        NavigationService.Navigate(new RoleThreePage());
+                    }
+                    
+                }
+                else
+                {
+                    MessageBox.Show("Неверные логин или пароль");
+                }
             }
             else
             {
