@@ -105,7 +105,7 @@ namespace DemoTrenirovka.Pages
 
         private void btnReg_Click(object sender, RoutedEventArgs e)
         {
-
+            NavigationService.Navigate(new RegistrationPage());
         }
     }
 }

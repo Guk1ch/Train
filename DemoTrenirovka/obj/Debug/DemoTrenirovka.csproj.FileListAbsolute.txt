@@ -21,7 +21,6 @@ C:\Users\Gukich\source\repos\DemoTrenirovka\DemoTrenirovka\obj\Debug\DemoTreniro
 C:\Users\Gukich\source\repos\DemoTrenirovka\DemoTrenirovka\obj\Debug\DemoTrenirovka.csproj.CopyComplete
 C:\Users\Gukich\source\repos\DemoTrenirovka\DemoTrenirovka\obj\Debug\DemoTrenirovka.exe
 C:\Users\Gukich\source\repos\DemoTrenirovka\DemoTrenirovka\obj\Debug\DemoTrenirovka.pdb
-C:\Users\Gukich\source\repos\DemoTrenirovka\DemoTrenirovka\obj\Debug\DemoTrenirovka.csproj.AssemblyReference.cache
 C:\Users\Gukich\source\repos\DemoTrenirovka\DemoTrenirovka\obj\Debug\Pages\RegistrationPage.g.cs
 C:\Users\Gukich\source\repos\DemoTrenirovka\DemoTrenirovka\obj\Debug\Pages\RoleOnePage.g.cs
 C:\Users\Gukich\source\repos\DemoTrenirovka\DemoTrenirovka\obj\Debug\Pages\RoleThreePage.g.cs
@@ -30,3 +29,4 @@ C:\Users\Gukich\source\repos\DemoTrenirovka\DemoTrenirovka\obj\Debug\Pages\Regis
 C:\Users\Gukich\source\repos\DemoTrenirovka\DemoTrenirovka\obj\Debug\Pages\RoleOnePage.baml
 C:\Users\Gukich\source\repos\DemoTrenirovka\DemoTrenirovka\obj\Debug\Pages\RoleThreePage.baml
 C:\Users\Gukich\source\repos\DemoTrenirovka\DemoTrenirovka\obj\Debug\Pages\RoleTwoPage.baml
+C:\Users\Gukich\source\repos\DemoTrenirovka\DemoTrenirovka\obj\Debug\DemoTrenirovka.csproj.AssemblyReference.cache

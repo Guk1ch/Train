@@ -12,6 +12,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Collections.ObjectModel;
+using DemoTrenirovka.DataBase;
 
 namespace DemoTrenirovka.Pages
 {
@@ -20,9 +22,51 @@ namespace DemoTrenirovka.Pages
     /// </summary>
     public partial class RegistrationPage : Page
     {
+        public static ObservableCollection<User> users { get; set; }
         public RegistrationPage()
         {
             InitializeComponent();
+            
+        }
+
+        private void btnBack_Click(object sender, RoutedEventArgs e)
+        {
+            NavigationService.Navigate(new AutgorisPage());
+        }
+
+        private void btnReg_Click(object sender, RoutedEventArgs e)
+        {
+            if (UniqueLogin(tbLog.Text.Trim()))
+            {
+                if (tbLog.Text.Trim() != "" && tbPass.Password.Trim() !=""&& tbName.Text.Trim() != "")
+                {
+                    User user = new User();
+                    user.Name = tbName.Text.Trim();
+                    user.Login = tbLog.Text.Trim();
+                    user.Password = tbPass.Password.Trim();
+                    Bdconection.connection.User.Add(user);
+                    Bdconection.connection.SaveChanges();
+                    System.Windows.MessageBox.Show("Аккаунт успешно создан!");
+                    NavigationService.Navigate(new AutgorisPage());
+                }
+               
+            }
+           
+
+
+        }
+        public static bool UniqueLogin(string login)
+        {
+            users = new ObservableCollection<User>(Bdconection.connection.User.ToList());
+            bool LoginUnic = true;
+            foreach (var i in users)
+            {
+                if (i.Login == login)
+                {
+                    LoginUnic = false;
+                }
+            }
+            return LoginUnic;
         }
     }
 }

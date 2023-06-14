@@ -9,6 +9,49 @@
       Title="RoleOnePage">
 
     <Grid>
-        
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <TextBlock Text="Привет Роль 1" VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Column="2"/>
+        <Button x:Name="btnBack" Content="Выйти" HorizontalAlignment="Center" VerticalAlignment="Center" Click="btnBack_Click" Grid.Column="0" Grid.Row="0"/>
+        <TextBox x:Name="tbSearch" Grid.Column="3" Grid.Row="0" SelectionChanged="tbSearch_SelectionChanged"/>
+        <TextBlock x:Name="TbIsEmpty" Text="По запросу ничего не найдено" Grid.Row="6" Grid.Column="4" Grid.ColumnSpan="5" FontSize="20" Visibility="Hidden"/>
+        <ListView x:Name="Lvprod" 
+                  ItemsSource="{Binding prod}" 
+                  Grid.Row="1" Grid.RowSpan="5"
+                  Grid.Column="0" Grid.ColumnSpan="5"
+                  SelectionChanged="Lvprod_SelectionChanged">
+            <ListView.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Columns="2"/>
+                </ItemsPanelTemplate>
+            </ListView.ItemsPanel>
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Width="300">
+                        <TextBlock Text="{Binding title}" 
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       FontSize="20" 
+                                       Foreground="Black"
+                                       
+                                       TextWrapping="Wrap"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
     </Grid>
 </Page>
